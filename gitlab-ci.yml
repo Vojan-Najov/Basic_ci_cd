@@ -1,0 +1,83 @@
+stages:
+  - build
+  - codestyle_test
+  - integration_test
+  - deploy
+
+job_build_cat:
+  stage: build
+  script:
+    - echo "Building the CAT project"
+    - make -C src/cat
+  artifacts:
+    paths:
+      - src/cat/s21_cat
+    expire_in: 30 days
+  after_script:
+    - src/part6/notice.sh "CAT build"
+
+job_build_grep:
+  stage: build
+  script:
+    - echo "Building the GREP project"
+    - make -C src/grep
+  artifacts:
+    paths:
+      - src/grep/s21_grep
+    expire_in: 30 days
+  after_script:
+    - src/part6/notice.sh "GREP build"
+
+job_codestyle_cat:
+  stage: codestyle_test
+  script:
+    - echo "Codestyle test CAT"
+    - cp materials/linters/.clang-format src/cat
+    - cd src/cat
+    - clang-format -Werror -n *.c *.h
+  after_script:
+    - src/part6/notice.sh "CAT codestyle test"
+
+job_codestyle_grep:
+  stage: codestyle_test
+  script:
+    - echo "Codestyle test GREP"
+    - cp materials/linters/.clang-format src/grep
+    - cd src/grep
+    - clang-format -Werror -n *.c *.h
+  after_script:
+    - src/part6/notice.sh "GREP codestyle test"
+
+job_test_cat:
+  stage: integration_test
+  script:
+    - echo "Integration test CAT"
+    - make -C src/cat
+    - cd src/tests/cat
+    - ./test.sh
+  after_script:
+    - src/part6/notice.sh "CAT integration test"
+
+job_test_grep:
+  stage: integration_test
+  script:
+    - echo "Integration test GREP"
+    - make -C src/grep
+    - cd src/tests/grep
+    - ./test.sh
+  after_script:
+    - src/part6/notice.sh "GREP integration test"
+
+job_deploy:
+  stage: deploy
+  when: manual
+  allow_failure: false
+  dependencies:
+    - job_build_cat
+    - job_build_grep
+  script:
+    - echo "Deploy"
+    - src/part5/deploy.sh
+  after_script:
+    - src/part6/notice.sh "Deploy"
+
